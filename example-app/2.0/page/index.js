@@ -15,7 +15,7 @@ import {
 } from "./index.const";
 
 // Visual Logger
-import { VisLog, hmUI } from "../shared/vis-log";
+import VisLog, { hmUI } from "../shared/vis-log";
 const vis = new VisLog("index.js");
 // example: vis.log("Hello World!");
 
