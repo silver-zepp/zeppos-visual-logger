@@ -157,3 +157,11 @@ vis.updateSettings({
 ```javascript
 vis.updateSettings({ text_style: 1 })
 ```
+
+## Real-World use case scenario
+
+Here’s an example case where **Visual Logger** already played a **key role**, helping with the development of the **Mini Chess** game. We can observe how the **AI** thinks right on the screen of the physical device!
+
+![](./assets/zepp-chess-engine-thinking.gif)
+
+*_current example shows its work on the **Bip 5 Emulator.** And is running a **debug** version of the game that looks different than the end product._
