@@ -69,7 +69,7 @@ npm i @zeppos/vis-log
 Visual Logger for ZeppOS 1.0 [GitHub](https://github.com/silver-zepp/zeppos-visual-logger/blob/master/1.0/vis-log.js)
 
 ```bash
-npm i @zeppos/vis-log-legacy
+npm i @zeppos/vis-log@legacy
 ```
 ## Customizing your logger
 
