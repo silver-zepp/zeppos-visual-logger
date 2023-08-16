@@ -38,7 +38,7 @@ const BG_STYLE = {
   color: DEFAULT_BACKGROUND_COLOR,
 };
 
-export class VisLog {
+export default class VisLog {
   #filename;
   #text_size = DEFAULT_TEXT_SIZE;
   #text_style = DEFAULT_TEXT_STYLE;
