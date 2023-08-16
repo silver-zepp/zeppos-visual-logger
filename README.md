@@ -37,7 +37,7 @@ You’ve seen the first example in the **gif** above, so let’s quickly walk 
 You start by simply including it in your project:
 
 ```javascript
-import { VisLog } from "./path-to-logger/vis-log";
+import VisLog from "./path-to-logger/vis-log";
 const vis = new VisLog("index.js");
 ```
 
@@ -148,7 +148,7 @@ vis.updateSettings({
 ```
 
 ```javascript
-import { VisLog, hmUI } from "./path-to-vis/vis-log";
+import VisLog, { hmUI } from "./path-to-vis/vis-log";
 vis.updateSettings({
     text_style: hmUI.text_style.WRAP
 })
