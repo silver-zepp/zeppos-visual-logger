@@ -17,11 +17,13 @@ With **Visual Logger**, you get exactly what you expect – all the logs you as
 - It includes features such as the automatic removal of old messages after a timeout and the ability to include a prefix in log messages, making it easier to manage and organize your log output.
 
 ## ⚡️ Quickstart
+You can install the Visual Logger from the NPM registry or download it directly from GitHub.
+
 ### Visual Logger for ZeppOS 2.0+ [link](https://github.com/silver-zepp/zeppos-visual-logger/blob/master/2.0/dist/vis-log.js)
 `npm i @silver-zepp/vis-log`
 ### Visual Logger for ZeppOS 1.0 [link](https://github.com/silver-zepp/zeppos-visual-logger/blob/master/1.0/vis-log.js)
 
-You start by simply including it in your project:
+Then include it in your project:
 
 ```javascript
 // install -> npm i @silver-zepp/vis-log
@@ -29,7 +31,7 @@ import VisLog from "@silver-zepp/vis-log";
 const vis = new VisLog("index.js");
 ```
 
-And then using it the usual **console.log(...)** or **logger.log(...)** style:
+And use it the usual **console.log(...)** or **logger.log(...)** style:
 
 ```javascript
 vis.log("Hello World!");
@@ -38,7 +40,7 @@ vis.info("This is your info");
 vis.error("Here's an error");
 ```
 
-Here's the result: You get clean logs on your device, and also they are mirrored with a help of a built-in **log** instance, which gives us colorful console logs with filtered levels.
+Here's the result: You get clean logs on your device, and also, they are mirrored with the help of a built-in **log** instance, which gives us colorful console logs with filtered levels.
 
 ![](./assets/console.jpg)
 
