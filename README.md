@@ -16,28 +16,16 @@ With **Visual Logger**, you get exactly what you expect – all the logs you as
 - It supports both console logging and visual logging, giving you the flexibility to choose how you want to view your log messages.
 - It includes features such as the automatic removal of old messages after a timeout and the ability to include a prefix in log messages, making it easier to manage and organize your log output.
 
-## Visual Logger feature examples
-
-You’ve seen the first example in the **gif** above, so let’s quickly walk through the rest of them and then dive deeper into their implementation.
-
-### ⓘ Example 2: The repeated messages do not clog the screen.
-
-![](./assets/vislog-spam-prevention.gif)
-
-### ⓘ Example 3: Show it only when you need it, hide all the other times.
-
-![](./assets/vislog-show-hide.gif)
-
-### ⓘ Example 4: Change its looks, to better cater to your app's theme.
-
-![](./assets/vislog-change-looks.gif)
-
-## How to use Visual Logger
+## ⚡️ Quickstart
+### Visual Logger for ZeppOS 2.0+ [link](https://github.com/silver-zepp/zeppos-visual-logger/blob/master/2.0/dist/vis-log.js)
+`npm i @silver-zepp/vis-log`
+### Visual Logger for ZeppOS 1.0 [link](https://github.com/silver-zepp/zeppos-visual-logger/blob/master/1.0/vis-log.js)
 
 You start by simply including it in your project:
 
 ```javascript
-import VisLog from "./path-to-logger/vis-log";
+// install -> npm i @silver-zepp/vis-log
+import VisLog from "@silver-zepp/vis-log";
 const vis = new VisLog("index.js");
 ```
 
@@ -54,23 +42,32 @@ Here's the result: You get clean logs on your device, and also they are mirrored
 
 ![](./assets/console.jpg)
 
+#### ⓘ Important: If you don't see the logger try refreshing it. It might be buried behind other widgets! Try always keeping it drawn the last.
+```javascript
+vis.refresh();
+```
+
+## Visual Logger more examples
+
+You’ve seen the first example in the **gif** above, so let’s quickly walk through the rest of them and then dive deeper into their implementation.
+
+### ⓘ Example 2: The repeated messages do not clog the screen.
+
+![](./assets/vislog-spam-prevention.gif)
+
+### ⓘ Example 3: Show it only when you need it, hide all the other times.
+
+![](./assets/vislog-show-hide.gif)
+
+### ⓘ Example 4: Change its looks, to better cater to your app's theme.
+
+![](./assets/vislog-change-looks.gif)
+
+
 ## Ready to give it a try?
 
 We have prepared a sample project for you to play with, which you can [**download Example**](https://github.com/silver-zepp/zeppos-visual-logger/tree/master/example-app/2.0) or clone the repository.
 
-You can install the Visual Logger into your ongoing project from the **NPM** repository or download it directly from **GitHub**.
-
-Visual Logger for ZeppOS 2.0+ [GitHub](https://github.com/silver-zepp/zeppos-visual-logger/blob/master/2.0/vis-log.js)
-
-```bash
-npm i @zeppos/vis-log
-```
-
-Visual Logger for ZeppOS 1.0 [GitHub](https://github.com/silver-zepp/zeppos-visual-logger/blob/master/1.0/vis-log.js)
-
-```bash
-npm i @zeppos/vis-log@legacy
-```
 ## Customizing your logger
 
 Let’s have a closer look at some of the most important settings
