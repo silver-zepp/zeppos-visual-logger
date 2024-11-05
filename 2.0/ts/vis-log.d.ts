@@ -57,6 +57,8 @@ export default class VisLog {
      * @param {number} [settings.line_count] - Maximum amount of vertical lines for the visual log. (@default=5)
      * @param {number} [settings.padding_multiplier] - The padding multiplier to fine tune vertical text position on different devices. (@default=1.5) Try increasing this value if you don't see the widget.
      * @param {number} [settings.margin] - The margin in pixels to fine tune vertical text position on different devices. (@default=0) Try increasing this value if the text doesn't fit the screen.
+     * @param {boolean} [settings.reverse_order] - Whether to display messages in reverse order (bottom-to-top). (@default=false)
+     * @param {boolean} [settings.use_logger] - Whether to use the Logger class instead of console.log. (@default=false)
      */
     updateSettings(settings: {
         filename?: string;
@@ -73,6 +75,8 @@ export default class VisLog {
         line_count?: number;
         padding_multiplier?: number;
         margin?: number;
+        reverse_order?: boolean;
+        use_logger?: boolean;
     }): void;
     #private;
 }

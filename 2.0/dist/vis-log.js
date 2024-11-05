@@ -1,4 +1,4 @@
-/** @about Visual Logger 1.0.8 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
+/** @about Visual Logger 1.1.1 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
 import * as hmUI from "@zos/ui";
 import { px } from "@zos/utils";
 import { getDeviceInfo, SCREEN_SHAPE_ROUND } from "@zos/device";
@@ -26,7 +26,7 @@ const PREFIX_INFO_LOG_DBG_U = "ⓘ";
 // scroll
 const DEFAULT_LINE_COUNT = 5; // debug array buffer
 let messages_arr = new Array(DEFAULT_LINE_COUNT).fill("");
-const repeats_arr = new Array(DEFAULT_LINE_COUNT).fill(0); // @add 1.02
+let repeats_arr = new Array(DEFAULT_LINE_COUNT).fill(0); // @add 1.02
 
 const COLOR_WHITE = 0xffffff;
 const DEFAULT_BACKGROUND_COLOR = 0x333333;
@@ -72,13 +72,20 @@ export default class VisLog { // @fix 1.0.8
   #is_widgets_created = false;
   #is_custom_margin = false;
 
+  // new stuffs :)
+  #view_container = null;
+  #use_logger = false;
+  #reverse_order = false;
+
   /**
    * Create a new VisLog instance.
    * @param {string} [filename=""] - The filename to show in console.log messages (optional).
    */
   constructor(filename = "") {
     logger = Logger.getLogger(filename);
+    this.#createViewContainer();
   }
+
   /**
    * Log a message with an "LOG" prefix.
    * @param {...any} args - The message to log, as one or more arguments that will be joined into a single string.
@@ -86,6 +93,7 @@ export default class VisLog { // @fix 1.0.8
   log(...args) {
     this.#logWithPrefix(PREFIX_INFO_LOG_DBG_U, PREFIX_LOG, ...args);
   }
+
   /**
    * Log a message with an "INFO" prefix.
    * @param {...any} args - The message to log, as one or more arguments that will be joined into a single string.
@@ -93,6 +101,7 @@ export default class VisLog { // @fix 1.0.8
   info(...args) {
     this.#logWithPrefix(PREFIX_INFO_LOG_DBG_U, PREFIX_INFO, ...args);
   }
+
   /**
    * Log a message with a "WARN" prefix.
    * @param {...any} args - The message to log, as one or more arguments that will be joined into a single string.
@@ -100,6 +109,7 @@ export default class VisLog { // @fix 1.0.8
   warn(...args) {
     this.#logWithPrefix(PREFIX_WARN_U, PREFIX_WARN, ...args);
   }
+
   /**
    * Log a message with an "ERR" prefix.
    * @param {...any} args - The message to log, as one or more arguments that will be joined into a single string.
@@ -107,6 +117,7 @@ export default class VisLog { // @fix 1.0.8
   error(...args) {
     this.#logWithPrefix(PREFIX_ERR_U, PREFIX_ERR, ...args);
   }
+
   /**
    * Log a message with an "DBG" prefix.
    * @param {...any} args - The message to log, as one or more arguments that will be joined into a single string.
@@ -114,67 +125,14 @@ export default class VisLog { // @fix 1.0.8
   debug(...args) {
     this.#logWithPrefix(PREFIX_INFO_LOG_DBG_U, PREFIX_DBG, ...args);
   }
-  #recreateWidgets() {
-    // destroy
-    if (this.#is_widgets_created) {
-      this.#destroyWidgets();
-    }
-    if (this.#background_enabled) {
-      this.#background_widget = hmUI.createWidget(hmUI.widget.FILL_RECT, {
-        ...BG_STYLE,
-      });
-    }
-    this.#text_widget = hmUI.createWidget(hmUI.widget.TEXT, {
-      ...TEXT_STYLE,
-    });
-    this.#is_widgets_created = true;
-  }
-  #logWithPrefix(prefix_visual, prefix_console, ...args) {
-    let msg = args.join(" ");
 
-    if (this.#prefix_enabled) {
-      msg = `${prefix_visual} ${msg}`;
-    }
-
-    const is_repeated = msg === messages_arr[0];
-    if (is_repeated) {
-      // update the repeat counter for a repeated message
-      repeats_arr[0]++;
-    } else {
-      // add a new message and repeat counter to the arrays
-      for (let i = this.#line_count - 1; i >= 0; i--) {
-        messages_arr[i + 1] = messages_arr[i];
-        repeats_arr[i + 1] = repeats_arr[i];
-      }
-      messages_arr[0] = msg;
-      repeats_arr[0] = 1;
-    }
-
-    // @fix 1.02
-    if (this.#timeout_enabled) {
-      if (!this.#timer) {
-        this.#timer = this.#createTimer(DEFAULT_INITIAL_TIMEOUT, 0, () =>
-          this.#removeOldestMessage()
-        );
-      } else {
-        clearTimeout(this.#timer);
-        this.#timer = this.#createTimer(DEFAULT_INITIAL_TIMEOUT, 0, () =>
-          this.#removeOldestMessage()
-        );
-      }
-    }
-
-    if (this.#visual_log_enabled) {
-      this.#renderText();
-    }
-    this.#consoleLog(prefix_console, args.join(" "));
-  }
   /**
    * Clear all messages from the logger.
    */
   clear() {
-    messages_arr.fill("");
-    repeats_arr.fill(0);
+    messages_arr = new Array(this.#line_count).fill("");
+    repeats_arr = new Array(this.#line_count).fill(0);
+    this.#renderText();
   }
   /**
    * Refreshing the widget will help it appear on top of other widgets as well as fixing the missing background.
@@ -182,153 +140,6 @@ export default class VisLog { // @fix 1.0.8
   refresh() {
     this.#is_widgets_created = false;
     this.#renderText();
-  }
-  #getNumMessages() {
-    const MAX_MESSAGES = Math.min(
-      this.#line_count,
-      Math.floor(DEVICE_HEIGHT / (this.#text_size * this.#padding_multiplier))
-    );
-    return Math.min(messages_arr.filter((msg) => msg).length, MAX_MESSAGES);
-  }
-  #removeOldestMessage() {
-    const num_messages = this.#getNumMessages();
-
-    if (num_messages > 0) {
-      messages_arr.pop();
-      repeats_arr.pop(); // @add 1.02
-
-      if (this.#visual_log_enabled) {
-        this.#renderText();
-      }
-
-      if (this.#timer) {
-        clearTimeout(this.#timer);
-
-        if (num_messages > 0 && this.#timeout_enabled) {
-          this.#timer = this.#createTimer(DEFAULT_NEXT_TIMEOUT, 0, () =>
-            this.#removeOldestMessage()
-          );
-        }
-      }
-    } else {
-      if (this.#timer) clearTimeout(this.#timer);
-      this.#timer = null;
-    }
-  }
-  #renderText() {
-    let msg = "";
-    for (let i = 0; i < this.#line_count; i++) {
-      if (messages_arr[i]) {
-        // if we have repeats -> draw them in the square brackets
-        if (repeats_arr[i] > 1) {
-          msg += `[${repeats_arr[i]}] `;
-        }
-        msg += messages_arr[i];
-        msg += "\n";
-      }
-    }
-
-    const num_messages = this.#getNumMessages();
-    const text_height =
-      num_messages * this.#text_size * this.#padding_multiplier;
-
-    // @add 1.0.5
-    if (screenShape === SCREEN_SHAPE_ROUND) {
-      if (!this.#is_custom_margin) {
-        this.#margin = this.#text_size;
-      }
-    }
-
-    let y_pos;
-    if (this.#log_from_top) {
-      y_pos = 0 + this.#margin; // @fix 1.0.4
-    } else {
-      y_pos =
-        DEVICE_HEIGHT -
-        this.#text_size * this.#padding_multiplier * num_messages -
-        this.#margin;
-    }
-
-    // z-sorting fix
-    if (!this.#is_widgets_created) this.#recreateWidgets();
-
-    // update background
-    if (this.#background_widget) {
-      this.#background_widget.setProperty(hmUI.prop.MORE, {
-        x: px(0),
-        y: px(y_pos),
-        h: px(text_height),
-        w: px(DEVICE_WIDTH),
-        color: this.#background_color,
-      });
-    }
-
-    // update text
-    if (this.#visual_log_enabled) {
-      if (this.#text_widget) {
-        this.#text_widget.setProperty(hmUI.prop.MORE, {
-          x: px(0),
-          y: px(y_pos),
-          h: px(text_height),
-          w: px(DEVICE_WIDTH),
-          text: msg,
-          text_size: this.#text_size,
-          text_style: this.#text_style,
-          color: this.#text_color,
-        });
-      }
-    }
-  }
-  #destroyWidgets() {
-    if (this.#text_widget) {
-      hmUI.deleteWidget(this.#text_widget);
-      this.#text_widget = null;
-    }
-    if (this.#background_widget) {
-      hmUI.deleteWidget(this.#background_widget);
-      this.#background_widget = null;
-    }
-  }
-  // createTimer replica for OS 2.0
-  #createTimer(startup_delay, repeat_delay, callback) {
-    const timer = setTimeout(() => {
-      callback();
-
-      if (repeat_delay > 0) {
-        this.#createTimer(repeat_delay, repeat_delay, callback);
-      }
-    }, startup_delay);
-
-    return timer;
-  }
-  // console
-  #consoleLog(prefix, msg) {
-    if (this.#console_log_enabled) {
-      if (this.#prefix_enabled) {
-        msg = `[${prefix}] ${msg}`;
-      }
-      // @add 1.0.7
-      switch (prefix) {
-        case PREFIX_LOG:
-          logger.log(msg);
-          break;
-        case PREFIX_INFO:
-          logger.info(msg);
-          break;
-        case PREFIX_WARN:
-          logger.warn(msg);
-          break;
-        case PREFIX_ERR:
-          logger.error(msg);
-          break;
-        case PREFIX_DBG:
-          logger.debug(msg);
-          break;
-        default:
-          logger.log(msg);
-          break;
-      }
-    }
   }
 
   /**
@@ -348,6 +159,8 @@ export default class VisLog { // @fix 1.0.8
    * @param {number} [settings.line_count] - Maximum amount of vertical lines for the visual log. (@default=5)
    * @param {number} [settings.padding_multiplier] - The padding multiplier to fine tune vertical text position on different devices. (@default=1.5) Try increasing this value if you don't see the widget.
    * @param {number} [settings.margin] - The margin in pixels to fine tune vertical text position on different devices. (@default=0) Try increasing this value if the text doesn't fit the screen.
+   * @param {boolean} [settings.reverse_order] - Whether to display messages in reverse order (bottom-to-top). (@default=false)
+   * @param {boolean} [settings.use_logger] - Whether to use the Logger class instead of console.log. (@default=false)
    */
   updateSettings(settings) {
     if (typeof settings.filename === "string") {
@@ -406,6 +219,7 @@ export default class VisLog { // @fix 1.0.8
     }
     if (typeof settings.line_count === "number") {
       this.#line_count = settings.line_count;
+      this.#trimArrays();
     }
     if (typeof settings.padding_multiplier === "number") {
       this.#padding_multiplier = settings.padding_multiplier;
@@ -414,7 +228,253 @@ export default class VisLog { // @fix 1.0.8
       this.#margin = settings.margin;
       this.#is_custom_margin = true;
     }
+
+    if (typeof settings.reverse_order === "boolean") {
+      this.#reverse_order = settings.reverse_order;
+    }
+    if (typeof settings.use_logger === "boolean") {
+      this.#use_logger = settings.use_logger;
+    }
+
     this.#renderText(); // @fix 1.0.4
+  }
+
+  #createViewContainer() {
+    this.#view_container = hmUI.createWidget(hmUI.widget.VIEW_CONTAINER, {
+      x: 0,
+      y: 0,
+      w: DEVICE_WIDTH,
+      h: DEVICE_HEIGHT,
+      scroll_enable: false,
+      z_index: 999 // always on top (TODO: maybe should make it adjustable?)
+    });
+  }
+
+  #recreateWidgets() {
+    // destroy
+    if (this.#is_widgets_created) {
+      this.#destroyWidgets();
+    }
+    if (this.#background_enabled) {
+      this.#background_widget = this.#view_container.createWidget(hmUI.widget.FILL_RECT, {
+        ...BG_STYLE,
+      });
+    }
+    this.#text_widget = this.#view_container.createWidget(hmUI.widget.TEXT, {
+      ...TEXT_STYLE,
+    });
+    this.#is_widgets_created = true;
+  }
+
+  #logWithPrefix(prefix_visual, prefix_console, ...args) {
+    let msg = args.join(" ");
+
+    if (this.#prefix_enabled) {
+      msg = `${prefix_visual} ${msg}`;
+    }
+
+    const is_repeated = msg === messages_arr[messages_arr.length - 1];
+    if (is_repeated) {
+      // update the repeat counter for a repeated message
+      repeats_arr[repeats_arr.length - 1]++;
+    } else {
+      // add new message to the end of the array
+      messages_arr.push(msg);
+      repeats_arr.push(1);
+      this.#trimArrays();
+
+      // remove oldest message if we exceed line count
+      if (messages_arr.length > this.#line_count) {
+        messages_arr.shift();
+        repeats_arr.shift();
+      }
+    }
+
+    // @fix 1.02
+    if (this.#timeout_enabled) {
+      if (!this.#timer) {
+        this.#timer = this.#createTimer(DEFAULT_INITIAL_TIMEOUT, 0, () =>
+          this.#removeOldestMessage()
+        );
+      } else {
+        clearTimeout(this.#timer);
+        this.#timer = this.#createTimer(DEFAULT_INITIAL_TIMEOUT, 0, () =>
+          this.#removeOldestMessage()
+        );
+      }
+    }
+
+    if (this.#visual_log_enabled) {
+      this.#renderText();
+    }
+    this.#consoleLog(prefix_console, args.join(" "));
+  }
+
+  #getNumMessages() {
+    const MAX_MESSAGES = Math.min(
+      this.#line_count,
+      Math.floor(DEVICE_HEIGHT / (this.#text_size * this.#padding_multiplier))
+    );
+    return Math.min(messages_arr.filter((msg) => msg).length, MAX_MESSAGES);
+  }
+
+  #removeOldestMessage() {
+    const num_messages = this.#getNumMessages();
+
+    if (num_messages > 0) {
+      messages_arr.pop();
+      repeats_arr.pop(); // @add 1.02
+
+      if (this.#visual_log_enabled) {
+        this.#renderText();
+      }
+
+      if (this.#timer) {
+        clearTimeout(this.#timer);
+
+        if (num_messages > 0 && this.#timeout_enabled) {
+          this.#timer = this.#createTimer(DEFAULT_NEXT_TIMEOUT, 0, () =>
+            this.#removeOldestMessage()
+          );
+        }
+      }
+    } else {
+      if (this.#timer) clearTimeout(this.#timer);
+      this.#timer = null;
+    }
+  }
+
+  #trimArrays() {
+    if (messages_arr.length > this.#line_count) {
+      messages_arr = messages_arr.slice(-this.#line_count);
+      repeats_arr = repeats_arr.slice(-this.#line_count);
+    }
+  }
+
+  #renderText() {
+    let msg = "";
+    const msg2render = this.#reverse_order ? messages_arr.slice().reverse() : messages_arr;
+  
+    for (let i = 0; i < msg2render.length; i++) {
+      if (msg2render[i]) {
+        if (repeats_arr[i] > 1) {
+          msg += `[${repeats_arr[i]}] `;
+        }
+        msg += msg2render[i];
+        msg += "\n";
+      }
+    }
+  
+    const num_messages = this.#getNumMessages();
+    const text_height = num_messages * this.#text_size * this.#padding_multiplier;
+  
+    // @add 1.0.5
+    if (screenShape === SCREEN_SHAPE_ROUND) {
+      if (!this.#is_custom_margin) {
+        this.#margin = this.#text_size;
+      }
+    }
+  
+    let container_y, content_y;
+    if (this.#log_from_top) {
+      container_y = 0;
+      content_y = this.#margin;
+    } else {
+      container_y = DEVICE_HEIGHT - text_height - this.#margin * 2;
+      content_y = 0;
+    }
+  
+    // update VIEW_CONTAINER position
+    this.#view_container.setProperty(hmUI.prop.MORE, {
+      y: container_y,
+      h: text_height + this.#margin * 2
+    });
+  
+    // z-sorting fix
+    if (!this.#is_widgets_created) this.#recreateWidgets();
+  
+    // update background
+    if (this.#background_widget) {
+      this.#background_widget.setProperty(hmUI.prop.MORE, {
+        x: px(0),
+        y: px(content_y),
+        h: px(text_height),
+        w: px(DEVICE_WIDTH),
+        color: this.#background_color,
+      });
+    }
+  
+    // update text
+    if (this.#visual_log_enabled) {
+      if (this.#text_widget) {
+        this.#text_widget.setProperty(hmUI.prop.MORE, {
+          x: px(0),
+          y: px(content_y),
+          h: px(text_height),
+          w: px(DEVICE_WIDTH),
+          text: msg,
+          text_size: this.#text_size,
+          text_style: this.#text_style,
+          color: this.#text_color,
+        });
+      }
+    }
+  }
+
+  #destroyWidgets() {
+    if (this.#view_container) {
+      hmUI.deleteWidget(this.#view_container);
+      this.#view_container = null;
+      this.#text_widget = null;
+      this.#background_widget = null;
+      this.#is_widgets_created = false;
+    }
+  }
+  // createTimer replica for OS 2.0
+  #createTimer(startup_delay, repeat_delay, callback) {
+    const timer = setTimeout(() => {
+      callback();
+
+      if (repeat_delay > 0) {
+        this.#createTimer(repeat_delay, repeat_delay, callback);
+      }
+    }, startup_delay);
+
+    return timer;
+  }
+  // console
+  #consoleLog(prefix, msg) {
+    if (this.#console_log_enabled) {
+      if (this.#prefix_enabled) {
+        msg = `[${prefix}] ${msg}`;
+      }
+      if (this.#use_logger) {
+        // use logger only if enabled
+        switch (prefix) {
+          case PREFIX_LOG:
+            logger.log(msg);
+            break;
+          case PREFIX_INFO:
+            logger.info(msg);
+            break;
+          case PREFIX_WARN:
+            logger.warn(msg);
+            break;
+          case PREFIX_ERR:
+            logger.error(msg);
+            break;
+          case PREFIX_DBG:
+            logger.debug(msg);
+            break;
+          default:
+            logger.log(msg);
+            break;
+        }
+      } else {
+        // console.log by default
+        console.log(msg);
+      }
+    }
   }
 }
 
@@ -436,4 +496,8 @@ export default class VisLog { // @fix 1.0.8
  * - @add moved from console.log to logger.log to keep colorful logs
  * 1.0.8
  * - @fix added missing default to the entry class
+ * 1.1.1
+ * - @add logger now sticks in place, allowing the use of scroll
+ * - @add reverse_order flag to switch the direction of the logs (default now top-to-bottom)
+ * - @add use_logger flag to use Logger class, by default vis now uses console.log to reduce spam
  */
