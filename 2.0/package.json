@@ -1,6 +1,6 @@
 {
   "name": "@silver-zepp/vis-log",
-  "version": "1.0.8",
+  "version": "1.1.1",
   "description": "An on-screen logger for ZeppOS Mini apps.",
   "main": "dist/vis-log.js",
   "types": "ts/vis-log.d.ts",
