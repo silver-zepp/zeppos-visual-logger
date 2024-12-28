@@ -1,4 +1,4 @@
-/** @about Visual Logger 1.1.1 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
+/** @about Visual Logger 1.1.2 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
 import * as hmUI from "@zos/ui";
 import { px } from "@zos/utils";
 import { getDeviceInfo, SCREEN_SHAPE_ROUND } from "@zos/device";
@@ -138,7 +138,9 @@ export default class VisLog { // @fix 1.0.8
    * Refreshing the widget will help it appear on top of other widgets as well as fixing the missing background.
    */
   refresh() {
-    this.#is_widgets_created = false;
+    this.#destroyWidgets();
+    this.#createViewContainer();
+    this.#recreateWidgets();
     this.#renderText();
   }
 
@@ -240,6 +242,9 @@ export default class VisLog { // @fix 1.0.8
   }
 
   #createViewContainer() {
+    if (this.#view_container) {
+      hmUI.deleteWidget(this.#view_container);
+    }
     this.#view_container = hmUI.createWidget(hmUI.widget.VIEW_CONTAINER, {
       x: 0,
       y: 0,
@@ -251,10 +256,6 @@ export default class VisLog { // @fix 1.0.8
   }
 
   #recreateWidgets() {
-    // destroy
-    if (this.#is_widgets_created) {
-      this.#destroyWidgets();
-    }
     if (this.#background_enabled) {
       this.#background_widget = this.#view_container.createWidget(hmUI.widget.FILL_RECT, {
         ...BG_STYLE,
@@ -430,6 +431,7 @@ export default class VisLog { // @fix 1.0.8
       this.#is_widgets_created = false;
     }
   }
+
   // createTimer replica for OS 2.0
   #createTimer(startup_delay, repeat_delay, callback) {
     const timer = setTimeout(() => {
@@ -500,4 +502,6 @@ export default class VisLog { // @fix 1.0.8
  * - @add logger now sticks in place, allowing the use of scroll
  * - @add reverse_order flag to switch the direction of the logs (default now top-to-bottom)
  * - @add use_logger flag to use Logger class, by default vis now uses console.log to reduce spam
+ * 1.1.2
+ * - @fix refresh() method wasn't recreating widget's container
  */
