@@ -1,4 +1,4 @@
-/** @about Visual Logger 1.1.2 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
+/** @about Visual Logger 1.1.3 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
 import * as hmUI from "@zos/ui";
 import { px } from "@zos/utils";
 import { getDeviceInfo, SCREEN_SHAPE_ROUND } from "@zos/device";
@@ -241,6 +241,26 @@ export default class VisLog { // @fix 1.0.8
     this.#renderText(); // @fix 1.0.4
   }
 
+  /**
+   * Destroy the VisLog instance, clean up resources, and remove widgets.
+   */
+  destroy() {
+    if (this.#timer) {
+      clearTimeout(this.#timer);
+      this.#timer = null;
+    }
+
+    this.#destroyWidgets();
+
+    messages_arr = [];
+    repeats_arr = [];
+
+    this.#is_widgets_created = false;
+    this.#is_custom_margin = false;
+
+    logger = null;
+  }
+
   #createViewContainer() {
     if (this.#view_container) {
       hmUI.deleteWidget(this.#view_container);
@@ -424,10 +444,17 @@ export default class VisLog { // @fix 1.0.8
 
   #destroyWidgets() {
     if (this.#view_container) {
+      if (this.#background_widget) {
+        hmUI.deleteWidget(this.#background_widget);
+        this.#background_widget = null;
+      }
+      if (this.#text_widget) {
+        hmUI.deleteWidget(this.#text_widget);
+        this.#text_widget = null;
+      }
+  
       hmUI.deleteWidget(this.#view_container);
       this.#view_container = null;
-      this.#text_widget = null;
-      this.#background_widget = null;
       this.#is_widgets_created = false;
     }
   }
@@ -504,4 +531,6 @@ export default class VisLog { // @fix 1.0.8
  * - @add use_logger flag to use Logger class, by default vis now uses console.log to reduce spam
  * 1.1.2
  * - @fix refresh() method wasn't recreating widget's container
+ * 1.1.3
+ * - @add destroy() method to clean up visual logger when dealing with multiple pages
  */
