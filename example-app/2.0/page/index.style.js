@@ -29,8 +29,8 @@ export const BTN_RIGHT = {
   radius: 90,
   normal_color: constants.COLOR_ORANGE_NORM,
   press_color: constants.COLOR_ORANGE_PRESS,
-  text_size: 32,
-  text: "➡️", // ➡
+  text_size: 48,
+  text: ">", // ➡️ ➡
 };
 
 export const BTN_LEFT = {
@@ -41,8 +41,8 @@ export const BTN_LEFT = {
   radius: 90,
   normal_color: constants.COLOR_ORANGE_NORM,
   press_color: constants.COLOR_ORANGE_PRESS,
-  text_size: 32,
-  text: "⬅️",
+  text_size: 48,
+  text: "<", // ⬅️
 };
 
 export const SWITCH = {

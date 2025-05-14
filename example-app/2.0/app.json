@@ -1,5 +1,5 @@
 {
-  "configVersion": "v2",
+  "configVersion": "v3",
   "app": {
     "appId": 20002,
     "appName": "Visual Logger",
@@ -12,9 +12,7 @@
     "vender": "zepp",
     "description": "A sample application that demonstrates the power of a Visual Logger"
   },
-  "permissions": [
-    "data:os.device.info"
-  ],
+  "permissions": [],
   "runtime": {
     "apiVersion": {
       "compatible": "2.0.0",
@@ -23,7 +21,7 @@
     }
   },
   "targets": {
-    "466x466-amazfit-gtr-4": {
+    "common": {
       "module": {
         "page": {
           "pages": [
@@ -33,23 +31,13 @@
       },
       "platforms": [
         {
-          "name": "gtr4",
-          "deviceSource": 7930112
+          "st": "r"
         },
         {
-          "name": "gtr4-w",
-          "deviceSource": 7930113
-        },
-        {
-          "name": "gts4",
-          "deviceSource": 7995648
-        },
-        {
-          "name": "gts4-w",
-          "deviceSource": 7995649
+          "st": "s"
         }
       ],
-      "designWidth": 480
+      "designWidth": 466
     }
   },
   "i18n": {

@@ -1,5 +1,6 @@
-import { getDeviceInfo } from "@zos/device";
-export const { width: DEVICE_WIDTH, height: DEVICE_HEIGHT } = getDeviceInfo();
+// import { getDeviceInfo } from "@zos/device";
+import { getDeviceInfoPlus } from "../../../2.0/dist/helpers/get_device_info_plus";
+export const { width: DEVICE_WIDTH, height: DEVICE_HEIGHT } = getDeviceInfoPlus();
 
 export const SCREEN_CENTER_X = DEVICE_WIDTH / 2;
 export const SCREEN_CENTER_Y = DEVICE_HEIGHT / 2;

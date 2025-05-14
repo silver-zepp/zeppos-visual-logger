@@ -15,9 +15,12 @@ import {
 } from "./index.const";
 
 // Visual Logger
-import VisLog, { hmUI } from "../shared/vis-log";
+import VisLog, { getDeviceInfoPlus } from "../../../2.0/dist/vis-log";
 const vis = new VisLog("index.js");
 // example: vis.log("Hello World!");
+
+// vis.log("Device info");
+// vis.log(JSON.stringify(getDeviceInfoPlus()))
 
 const txt_examples_top = [
   getText("txt.example1_top"),

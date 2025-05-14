@@ -1,7 +1,8 @@
-/** @about Visual Logger 1.1.3 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
+/** @about Visual Logger 1.2.0 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
 import * as hmUI from "@zos/ui";
 import { px } from "@zos/utils";
-import { getDeviceInfo, SCREEN_SHAPE_ROUND } from "@zos/device";
+// import { getDeviceInfo, SCREEN_SHAPE_ROUND } from "@zos/device";
+import { getDeviceInfoPlus } from "./helpers/get_device_info_plus";
 import { log as Logger } from "@zos/utils";
 
 export { hmUI };
@@ -9,8 +10,12 @@ export { px };
 export const {
   width: DEVICE_WIDTH,
   height: DEVICE_HEIGHT,
-  screenShape,
-} = getDeviceInfo();
+  // screenShape,
+} = getDeviceInfoPlus();
+
+export { getDeviceInfoPlus };
+
+const is_round_screen = getDeviceInfoPlus().shape == "R" ? true : false; 
 
 let logger;
 
@@ -19,7 +24,7 @@ const PREFIX_INFO = "INFO";
 const PREFIX_WARN = "WARN";
 const PREFIX_ERR = "ERR";
 const PREFIX_DBG = "DBG";
-const PREFIX_WARN_U = "⚠";
+const PREFIX_WARN_U = "○"; // ! ○
 const PREFIX_ERR_U = "⊗";
 const PREFIX_INFO_LOG_DBG_U = "ⓘ";
 
@@ -37,8 +42,8 @@ const DEFAULT_INITIAL_TIMEOUT = 5000;
 const DEFAULT_NEXT_TIMEOUT = 2000;
 
 const TEXT_STYLE = {
-  h: px(0),
-  w: px(DEVICE_WIDTH),
+  h: 0,
+  w: DEVICE_WIDTH,
   color: COLOR_WHITE,
   text_size: DEFAULT_TEXT_SIZE,
   align_h: hmUI.align.CENTER_H, // CENTER_H LEFT
@@ -46,8 +51,8 @@ const TEXT_STYLE = {
 };
 // background
 const BG_STYLE = {
-  x: px(0),
-  w: px(DEVICE_WIDTH),
+  x: 0,
+  w: DEVICE_WIDTH,
   color: DEFAULT_BACKGROUND_COLOR,
 };
 
@@ -72,10 +77,13 @@ export default class VisLog { // @fix 1.0.8
   #is_widgets_created = false;
   #is_custom_margin = false;
 
-  // new stuffs :)
   #view_container = null;
   #use_logger = false;
   #reverse_order = false;
+
+  // config for text wrapping
+  #chars_per_line_estimate_factor = 0.60; // higher = better distance handling
+  #round_screen_width_reduction_factor = 0.85;
 
   /**
    * Create a new VisLog instance.
@@ -187,7 +195,7 @@ export default class VisLog { // @fix 1.0.8
       if (this.#background_widget) {
         this.#background_widget.setProperty(
           hmUI.prop.VISIBLE,
-          settings.visual_log_enabled
+          settings.visual_log_enabled && this.#background_enabled
         );
       }
       // hide text
@@ -203,7 +211,7 @@ export default class VisLog { // @fix 1.0.8
       if (this.#background_widget) {
         this.#background_widget.setProperty(
           hmUI.prop.VISIBLE,
-          settings.background_enabled
+          settings.background_enabled && this.#visual_log_enabled
         );
       }
     }
@@ -288,27 +296,28 @@ export default class VisLog { // @fix 1.0.8
   }
 
   #logWithPrefix(prefix_visual, prefix_console, ...args) {
-    let msg = args.join(" ");
+    let msg_content = args.join(" ");
+    let msg_for_array = msg_content;
 
     if (this.#prefix_enabled) {
-      msg = `${prefix_visual} ${msg}`;
+      msg_for_array = `${prefix_visual} ${msg_content}`;
+    }
+    
+    // dups check is on message with its visual prefix
+    const last_message_index = messages_arr.length > 0 ? messages_arr.length - 1 : -1;
+    let is_repeated = false;
+    if (last_message_index !== -1) {
+        is_repeated = msg_for_array === messages_arr[last_message_index];
     }
 
-    const is_repeated = msg === messages_arr[messages_arr.length - 1];
     if (is_repeated) {
       // update the repeat counter for a repeated message
       repeats_arr[repeats_arr.length - 1]++;
     } else {
       // add new message to the end of the array
-      messages_arr.push(msg);
+      messages_arr.push(msg_for_array);
       repeats_arr.push(1);
       this.#trimArrays();
-
-      // remove oldest message if we exceed line count
-      if (messages_arr.length > this.#line_count) {
-        messages_arr.shift();
-        repeats_arr.shift();
-      }
     }
 
     // @fix 1.02
@@ -328,117 +337,214 @@ export default class VisLog { // @fix 1.0.8
     if (this.#visual_log_enabled) {
       this.#renderText();
     }
-    this.#consoleLog(prefix_console, args.join(" "));
+    this.#consoleLog(prefix_console, msg_content);
   }
 
-  #getNumMessages() {
-    const MAX_MESSAGES = Math.min(
-      this.#line_count,
-      Math.floor(DEVICE_HEIGHT / (this.#text_size * this.#padding_multiplier))
-    );
-    return Math.min(messages_arr.filter((msg) => msg).length, MAX_MESSAGES);
+  #getActualMessagesCount() {
+    return messages_arr.filter((msg) => typeof msg === 'string' && msg !== "").length;
   }
+
 
   #removeOldestMessage() {
-    const num_messages = this.#getNumMessages();
+    const num_stored_messages = this.#getActualMessagesCount();
 
-    if (num_messages > 0) {
-      messages_arr.pop();
-      repeats_arr.pop(); // @add 1.02
+    if (num_stored_messages > 0) {
+      messages_arr.shift();
+      repeats_arr.shift();
 
       if (this.#visual_log_enabled) {
         this.#renderText();
       }
 
+      const remaining_messages = this.#getActualMessagesCount();
       if (this.#timer) {
         clearTimeout(this.#timer);
+        this.#timer = null;
+      }
 
-        if (num_messages > 0 && this.#timeout_enabled) {
-          this.#timer = this.#createTimer(DEFAULT_NEXT_TIMEOUT, 0, () =>
-            this.#removeOldestMessage()
-          );
-        }
+      if (remaining_messages > 0 && this.#timeout_enabled) {
+        this.#timer = this.#createTimer(DEFAULT_NEXT_TIMEOUT, 0, () =>
+          this.#removeOldestMessage()
+        );
       }
     } else {
-      if (this.#timer) clearTimeout(this.#timer);
-      this.#timer = null;
+      if (this.#timer) {
+        clearTimeout(this.#timer);
+        this.#timer = null;
+      }
     }
   }
 
   #trimArrays() {
-    if (messages_arr.length > this.#line_count) {
-      messages_arr = messages_arr.slice(-this.#line_count);
-      repeats_arr = repeats_arr.slice(-this.#line_count);
+    while (messages_arr.length > this.#line_count) {
+      messages_arr.shift();
+      repeats_arr.shift();
     }
   }
 
-  #renderText() {
-    let msg = "";
-    const msg2render = this.#reverse_order ? messages_arr.slice().reverse() : messages_arr;
-  
-    for (let i = 0; i < msg2render.length; i++) {
-      if (msg2render[i]) {
-        if (repeats_arr[i] > 1) {
-          msg += `[${repeats_arr[i]}] `;
+  #wrapText(text_to_wrap, max_chars) {
+    if (max_chars <= 0) return [text_to_wrap];
+
+    const lines = [];
+    let current_line = "";
+    const words = String(text_to_wrap).split(' ');
+
+    for (const word of words) {
+        if (word.length === 0 && current_line.length === 0 && lines.length === 0 && words.length === 1) {
+             lines.push("");
+             break;
         }
-        msg += msg2render[i];
-        msg += "\n";
+        if (word.length === 0 && current_line.length > 0) {
+            continue;
+        }
+
+
+        if (current_line.length === 0) {
+            // word fits, or word is too long and will be chunked
+            if (word.length <= max_chars) {
+                current_line = word;
+            } else {
+                // word is longer than max_chars
+                let temp_word = word;
+                while (temp_word.length > max_chars) {
+                    lines.push(temp_word.substring(0, max_chars));
+                    temp_word = temp_word.substring(max_chars);
+                }
+                current_line = temp_word; // long word %
+            }
+        } else if (current_line.length + 1 + word.length <= max_chars) {
+            current_line += " " + word;
+        } else {
+            // word doesn't fit
+            lines.push(current_line);
+            if (word.length <= max_chars) {
+                current_line = word;
+            } else {
+                // word is longer than max_chars
+                let temp_word = word;
+                while (temp_word.length > max_chars) {
+                    lines.push(temp_word.substring(0, max_chars));
+                    temp_word = temp_word.substring(max_chars);
+                }
+                current_line = temp_word;
+            }
+        }
+    }
+
+    if (current_line.length > 0 || (lines.length === 0 && words.length > 0 && words[0].length === 0) || (lines.length === 0 && words.length === 0) ) {
+        lines.push(current_line);
+    }
+    
+    return lines.length > 0 ? lines : [""];
+  }
+
+
+  #renderText() {
+    let final_text_for_widget = "";
+    let total_visual_lines = 0;
+    const background_configs = [];
+
+    const msg2render = this.#reverse_order ? messages_arr.slice().reverse() : messages_arr.slice();
+    const repeats2render = this.#reverse_order ? repeats_arr.slice().reverse() : repeats_arr.slice();
+
+    const effective_screen_width = is_round_screen ? DEVICE_WIDTH * this.#round_screen_width_reduction_factor : DEVICE_WIDTH;
+    // this.#chars_per_line_estimate_factor = fine tune
+    const avg_char_width_px = this.#text_size * this.#chars_per_line_estimate_factor;
+    let max_chars_per_line = avg_char_width_px > 0 ? Math.floor(effective_screen_width / avg_char_width_px) : 20;
+    max_chars_per_line = Math.max(max_chars_per_line, 5);
+
+    let current_log_entry_index = 0;
+
+    for (let i = 0; i < msg2render.length; i++) {
+      if (typeof msg2render[i] === 'string' && msg2render[i] !== "") {
+        let entry_text_to_wrap = "";
+        if (repeats2render[i] > 1) {
+          entry_text_to_wrap += `[${repeats2render[i]}] `;
+        }
+        entry_text_to_wrap += msg2render[i];
+        
+        const wrapped_lines_for_current_entry = this.#wrapText(entry_text_to_wrap, max_chars_per_line);
+
+        if (final_text_for_widget.length > 0) {
+          final_text_for_widget += "\n";
+        }
+        final_text_for_widget += wrapped_lines_for_current_entry.join("\n");
+
+        if (this.#background_enabled) {
+             background_configs.push({
+                start_visual_line: total_visual_lines,
+                num_visual_lines: wrapped_lines_for_current_entry.length,
+                original_log_index: this.#reverse_order ? (messages_arr.length -1 - current_log_entry_index) : current_log_entry_index 
+            });
+        }
+        total_visual_lines += wrapped_lines_for_current_entry.length;
+        current_log_entry_index++;
       }
     }
-  
-    const num_messages = this.#getNumMessages();
-    const text_height = num_messages * this.#text_size * this.#padding_multiplier;
+
+    const single_line_height = this.#text_size * this.#padding_multiplier;
+    const text_block_total_height = total_visual_lines * single_line_height;
   
     // @add 1.0.5
-    if (screenShape === SCREEN_SHAPE_ROUND) {
+    if (is_round_screen) { // screenShape === SCREEN_SHAPE_ROUND
       if (!this.#is_custom_margin) {
         this.#margin = this.#text_size;
       }
     }
   
-    let container_y, content_y;
+    let container_y, content_y_offset_in_container;
     if (this.#log_from_top) {
       container_y = 0;
-      content_y = this.#margin;
+      content_y_offset_in_container = this.#margin;
     } else {
-      container_y = DEVICE_HEIGHT - text_height - this.#margin * 2;
-      content_y = 0;
+      container_y = DEVICE_HEIGHT - (text_block_total_height + this.#margin * 2);
+      content_y_offset_in_container = this.#margin;
     }
-  
+    
+    const container_total_height = text_block_total_height + this.#margin * 2;
+
     // update VIEW_CONTAINER position
+    if (!this.#view_container) this.#createViewContainer();
+    
     this.#view_container.setProperty(hmUI.prop.MORE, {
       y: container_y,
-      h: text_height + this.#margin * 2
+      h: container_total_height
     });
   
-    // z-sorting fix
+    // z-sorting fix and widget creation
     if (!this.#is_widgets_created) this.#recreateWidgets();
   
     // update background
-    if (this.#background_widget) {
+    if (this.#background_widget && this.#background_enabled && this.#visual_log_enabled) {
       this.#background_widget.setProperty(hmUI.prop.MORE, {
-        x: px(0),
-        y: px(content_y),
-        h: px(text_height),
-        w: px(DEVICE_WIDTH),
+        x: 0,
+        y: content_y_offset_in_container,
+        h: text_block_total_height,
+        w: DEVICE_WIDTH,
         color: this.#background_color,
       });
+       this.#background_widget.setProperty(hmUI.prop.VISIBLE, true);
+    } else if (this.#background_widget) {
+        this.#background_widget.setProperty(hmUI.prop.VISIBLE, false);
     }
   
     // update text
     if (this.#visual_log_enabled) {
       if (this.#text_widget) {
         this.#text_widget.setProperty(hmUI.prop.MORE, {
-          x: px(0),
-          y: px(content_y),
-          h: px(text_height),
-          w: px(DEVICE_WIDTH),
-          text: msg,
+          x: 0,
+          y: content_y_offset_in_container,
+          w: DEVICE_WIDTH,
+          h: text_block_total_height,
+          text: final_text_for_widget,
           text_size: this.#text_size,
           text_style: this.#text_style,
           color: this.#text_color,
         });
+         this.#text_widget.setProperty(hmUI.prop.VISIBLE, true);
       }
+    } else {
+        if(this.#text_widget) this.#text_widget.setProperty(hmUI.prop.VISIBLE, false);
     }
   }
 
@@ -461,11 +567,12 @@ export default class VisLog { // @fix 1.0.8
 
   // createTimer replica for OS 2.0
   #createTimer(startup_delay, repeat_delay, callback) {
+    const bound_callback = callback.bind(this); 
     const timer = setTimeout(() => {
-      callback();
-
+      bound_callback();
       if (repeat_delay > 0) {
-        this.#createTimer(repeat_delay, repeat_delay, callback);
+        // bugged?
+        // this.#timer = this.#createTimer(repeat_delay, repeat_delay, callback);
       }
     }, startup_delay);
 
@@ -533,4 +640,11 @@ export default class VisLog { // @fix 1.0.8
  * - @fix refresh() method wasn't recreating widget's container
  * 1.1.3
  * - @add destroy() method to clean up visual logger when dealing with multiple pages
+ * 1.2.0
+ * - @add vislog no longer requires "data:os.device.info" permission
+ * - @add getDeviceInfoPlus() - a getter for basic device info like screen resolution. doesn't require .info permission.
+ * - @upd vislog example updated to support multiple devices
+ * - @rem px() removed. bugged for automation on newer devices
+ * - @rem replaced ⚠ warn symbol with ○ as it was read as emoji and looked bugged
+ * - @fix multiple bugfixes
  */
