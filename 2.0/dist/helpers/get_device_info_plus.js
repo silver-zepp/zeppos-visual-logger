@@ -76,8 +76,8 @@ export function getDeviceInfoPlus() {
 				api: parseFloat(minAPI) ?? 1.0,
 				device_sources: [ 404 ],
 				shape: 'U',  // unknown
-				width: 320,  
-				height: 380, 
+				width: 480,  
+				height: 480, 
 				buttons: 1,
 				widget_support: false,
 				hw_version: hwVersion

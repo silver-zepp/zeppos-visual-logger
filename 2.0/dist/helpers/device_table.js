@@ -1,6 +1,7 @@
-// last update: 5/13/2025
+// last update: 5/24/2025
 // ds = deviceSource, btn = physical buttons, WS = widget support yes/no
 export const device_table = {
+  'Amazfit Balance 2': { zos: 5.0, api: 4.0, ds: [9568512, 9568513, 9568515, 9572608, 9572609, 9572611], shape: 'R', W: 480, H: 480, btn: 2, WS: 1 },
   'Amazfit Active 2 (R)': { zos: 4.5, api: 4.0, ds: [8913152, 8913153, 8913155, 8913159, 10092800, 10092801, 10092803, 10092807], shape: 'R', W: 466, H: 466, btn: 2, WS: 1 },
   'Amazfit Bip 6': { zos: 4.5, api: 4.0, ds: [9765120, 9765121, 10158337], shape: 'S', W: 390, H: 450, btn: 2, WS: 1 },
   'Amazfit T-Rex 3': { zos: 4.5, api: 4.0, ds: [8716544, 8716545, 8716547], shape: 'R', W: 480, H: 480, btn: 4, WS: 0 },

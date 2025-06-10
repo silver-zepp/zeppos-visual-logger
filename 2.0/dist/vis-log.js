@@ -1,4 +1,4 @@
-/** @about Visual Logger 1.2.0 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
+/** @about Visual Logger 1.2.3 @min_zeppos 2.0 @author: Silver, Zepp Health. @license: MIT */
 import * as hmUI from "@zos/ui";
 import { px } from "@zos/utils";
 // import { getDeviceInfo, SCREEN_SHAPE_ROUND } from "@zos/device";
@@ -15,7 +15,7 @@ export const {
 
 export { getDeviceInfoPlus };
 
-const is_round_screen = getDeviceInfoPlus().shape == "R" ? true : false; 
+const is_round_screen = getDeviceInfoPlus().shape == "R" ? true : false;
 
 let logger;
 
@@ -85,12 +85,15 @@ export default class VisLog { // @fix 1.0.8
   #chars_per_line_estimate_factor = 0.60; // higher = better distance handling
   #round_screen_width_reduction_factor = 0.85;
 
+  #filename = null;
+
   /**
    * Create a new VisLog instance.
    * @param {string} [filename=""] - The filename to show in console.log messages (optional).
    */
   constructor(filename = "") {
-    logger = Logger.getLogger(filename);
+    this.#filename = filename;
+    if (!is_round_screen) this.#log_from_top = false;
     this.#createViewContainer();
   }
 
@@ -174,7 +177,10 @@ export default class VisLog { // @fix 1.0.8
    */
   updateSettings(settings) {
     if (typeof settings.filename === "string") {
-      logger = Logger.getLogger(settings.filename);
+      this.#filename = settings.filename;
+      if (this.#use_logger) {
+        logger = Logger.getLogger(settings.filename);
+      }
     }
     if (typeof settings.log_from_top === "boolean") {
       this.#log_from_top = settings.log_from_top;
@@ -244,6 +250,7 @@ export default class VisLog { // @fix 1.0.8
     }
     if (typeof settings.use_logger === "boolean") {
       this.#use_logger = settings.use_logger;
+      logger = Logger.getLogger(this.#filename);
     }
 
     this.#renderText(); // @fix 1.0.4
@@ -302,12 +309,12 @@ export default class VisLog { // @fix 1.0.8
     if (this.#prefix_enabled) {
       msg_for_array = `${prefix_visual} ${msg_content}`;
     }
-    
+
     // dups check is on message with its visual prefix
     const last_message_index = messages_arr.length > 0 ? messages_arr.length - 1 : -1;
     let is_repeated = false;
     if (last_message_index !== -1) {
-        is_repeated = msg_for_array === messages_arr[last_message_index];
+      is_repeated = msg_for_array === messages_arr[last_message_index];
     }
 
     if (is_repeated) {
@@ -390,51 +397,51 @@ export default class VisLog { // @fix 1.0.8
     const words = String(text_to_wrap).split(' ');
 
     for (const word of words) {
-        if (word.length === 0 && current_line.length === 0 && lines.length === 0 && words.length === 1) {
-             lines.push("");
-             break;
-        }
-        if (word.length === 0 && current_line.length > 0) {
-            continue;
-        }
+      if (word.length === 0 && current_line.length === 0 && lines.length === 0 && words.length === 1) {
+        lines.push("");
+        break;
+      }
+      if (word.length === 0 && current_line.length > 0) {
+        continue;
+      }
 
 
-        if (current_line.length === 0) {
-            // word fits, or word is too long and will be chunked
-            if (word.length <= max_chars) {
-                current_line = word;
-            } else {
-                // word is longer than max_chars
-                let temp_word = word;
-                while (temp_word.length > max_chars) {
-                    lines.push(temp_word.substring(0, max_chars));
-                    temp_word = temp_word.substring(max_chars);
-                }
-                current_line = temp_word; // long word %
-            }
-        } else if (current_line.length + 1 + word.length <= max_chars) {
-            current_line += " " + word;
+      if (current_line.length === 0) {
+        // word fits, or word is too long and will be chunked
+        if (word.length <= max_chars) {
+          current_line = word;
         } else {
-            // word doesn't fit
-            lines.push(current_line);
-            if (word.length <= max_chars) {
-                current_line = word;
-            } else {
-                // word is longer than max_chars
-                let temp_word = word;
-                while (temp_word.length > max_chars) {
-                    lines.push(temp_word.substring(0, max_chars));
-                    temp_word = temp_word.substring(max_chars);
-                }
-                current_line = temp_word;
-            }
+          // word is longer than max_chars
+          let temp_word = word;
+          while (temp_word.length > max_chars) {
+            lines.push(temp_word.substring(0, max_chars));
+            temp_word = temp_word.substring(max_chars);
+          }
+          current_line = temp_word; // long word %
         }
+      } else if (current_line.length + 1 + word.length <= max_chars) {
+        current_line += " " + word;
+      } else {
+        // word doesn't fit
+        lines.push(current_line);
+        if (word.length <= max_chars) {
+          current_line = word;
+        } else {
+          // word is longer than max_chars
+          let temp_word = word;
+          while (temp_word.length > max_chars) {
+            lines.push(temp_word.substring(0, max_chars));
+            temp_word = temp_word.substring(max_chars);
+          }
+          current_line = temp_word;
+        }
+      }
     }
 
-    if (current_line.length > 0 || (lines.length === 0 && words.length > 0 && words[0].length === 0) || (lines.length === 0 && words.length === 0) ) {
-        lines.push(current_line);
+    if (current_line.length > 0 || (lines.length === 0 && words.length > 0 && words[0].length === 0) || (lines.length === 0 && words.length === 0)) {
+      lines.push(current_line);
     }
-    
+
     return lines.length > 0 ? lines : [""];
   }
 
@@ -462,7 +469,7 @@ export default class VisLog { // @fix 1.0.8
           entry_text_to_wrap += `[${repeats2render[i]}] `;
         }
         entry_text_to_wrap += msg2render[i];
-        
+
         const wrapped_lines_for_current_entry = this.#wrapText(entry_text_to_wrap, max_chars_per_line);
 
         if (final_text_for_widget.length > 0) {
@@ -471,11 +478,11 @@ export default class VisLog { // @fix 1.0.8
         final_text_for_widget += wrapped_lines_for_current_entry.join("\n");
 
         if (this.#background_enabled) {
-             background_configs.push({
-                start_visual_line: total_visual_lines,
-                num_visual_lines: wrapped_lines_for_current_entry.length,
-                original_log_index: this.#reverse_order ? (messages_arr.length -1 - current_log_entry_index) : current_log_entry_index 
-            });
+          background_configs.push({
+            start_visual_line: total_visual_lines,
+            num_visual_lines: wrapped_lines_for_current_entry.length,
+            original_log_index: this.#reverse_order ? (messages_arr.length - 1 - current_log_entry_index) : current_log_entry_index
+          });
         }
         total_visual_lines += wrapped_lines_for_current_entry.length;
         current_log_entry_index++;
@@ -484,14 +491,14 @@ export default class VisLog { // @fix 1.0.8
 
     const single_line_height = this.#text_size * this.#padding_multiplier;
     const text_block_total_height = total_visual_lines * single_line_height;
-  
+
     // @add 1.0.5
     if (is_round_screen) { // screenShape === SCREEN_SHAPE_ROUND
       if (!this.#is_custom_margin) {
         this.#margin = this.#text_size;
       }
     }
-  
+
     let container_y, content_y_offset_in_container;
     if (this.#log_from_top) {
       container_y = 0;
@@ -500,20 +507,20 @@ export default class VisLog { // @fix 1.0.8
       container_y = DEVICE_HEIGHT - (text_block_total_height + this.#margin * 2);
       content_y_offset_in_container = this.#margin;
     }
-    
+
     const container_total_height = text_block_total_height + this.#margin * 2;
 
     // update VIEW_CONTAINER position
     if (!this.#view_container) this.#createViewContainer();
-    
+
     this.#view_container.setProperty(hmUI.prop.MORE, {
       y: container_y,
       h: container_total_height
     });
-  
+
     // z-sorting fix and widget creation
     if (!this.#is_widgets_created) this.#recreateWidgets();
-  
+
     // update background
     if (this.#background_widget && this.#background_enabled && this.#visual_log_enabled) {
       this.#background_widget.setProperty(hmUI.prop.MORE, {
@@ -523,11 +530,11 @@ export default class VisLog { // @fix 1.0.8
         w: DEVICE_WIDTH,
         color: this.#background_color,
       });
-       this.#background_widget.setProperty(hmUI.prop.VISIBLE, true);
+      this.#background_widget.setProperty(hmUI.prop.VISIBLE, true);
     } else if (this.#background_widget) {
-        this.#background_widget.setProperty(hmUI.prop.VISIBLE, false);
+      this.#background_widget.setProperty(hmUI.prop.VISIBLE, false);
     }
-  
+
     // update text
     if (this.#visual_log_enabled) {
       if (this.#text_widget) {
@@ -541,10 +548,10 @@ export default class VisLog { // @fix 1.0.8
           text_style: this.#text_style,
           color: this.#text_color,
         });
-         this.#text_widget.setProperty(hmUI.prop.VISIBLE, true);
+        this.#text_widget.setProperty(hmUI.prop.VISIBLE, true);
       }
     } else {
-        if(this.#text_widget) this.#text_widget.setProperty(hmUI.prop.VISIBLE, false);
+      if (this.#text_widget) this.#text_widget.setProperty(hmUI.prop.VISIBLE, false);
     }
   }
 
@@ -558,7 +565,7 @@ export default class VisLog { // @fix 1.0.8
         hmUI.deleteWidget(this.#text_widget);
         this.#text_widget = null;
       }
-  
+
       hmUI.deleteWidget(this.#view_container);
       this.#view_container = null;
       this.#is_widgets_created = false;
@@ -567,7 +574,7 @@ export default class VisLog { // @fix 1.0.8
 
   // createTimer replica for OS 2.0
   #createTimer(startup_delay, repeat_delay, callback) {
-    const bound_callback = callback.bind(this); 
+    const bound_callback = callback.bind(this);
     const timer = setTimeout(() => {
       bound_callback();
       if (repeat_delay > 0) {
@@ -581,11 +588,11 @@ export default class VisLog { // @fix 1.0.8
   // console
   #consoleLog(prefix, msg) {
     if (this.#console_log_enabled) {
-      if (this.#prefix_enabled) {
-        msg = `[${prefix}] ${msg}`;
-      }
       if (this.#use_logger) {
-        // use logger only if enabled
+        if (!logger && this.#filename) {
+          logger = Logger.getLogger(this.#filename);
+        }
+
         switch (prefix) {
           case PREFIX_LOG:
             logger.log(msg);
@@ -607,7 +614,13 @@ export default class VisLog { // @fix 1.0.8
             break;
         }
       } else {
-        // console.log by default
+        if (this.#prefix_enabled && this.#filename) {
+          msg = `[${prefix}] [${this.#filename}] ${msg}`;
+        } else if (this.#prefix_enabled) {
+          msg = `[${prefix}] ${msg}`;
+        } else if (this.#filename) {
+          msg = `[${this.#filename}] ${msg}`;
+        }
         console.log(msg);
       }
     }
@@ -647,4 +660,8 @@ export default class VisLog { // @fix 1.0.8
  * - @rem px() removed. bugged for automation on newer devices
  * - @rem replaced ⚠ warn symbol with ○ as it was read as emoji and looked bugged
  * - @fix multiple bugfixes
+ * 1.2.3
+ * - @fix filename support for console.log output
+ * - @fix by default log from bottom on SQUARE devices. otherwise status bar overlaps it
+ * - @add library support for Balance 2 and Bip 6
  */
