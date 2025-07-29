@@ -1,5 +1,93 @@
 # ZeppOS Visual Logger: On-Screen Logs on Your Device
 
+## VisLog 1.5.0 Update: `AppSide` & `AppSettings` logs support!
+- deliver logs from `app-side` and `app-settings` components directly to your device's screen as well as the Simulator's console
+- no more guessing game when trying to debug `Settings Page` on the actual hardware device as there was no console for it (until now)
+- additionally now vislog works in `app.js` (console only)
+
+![](./assets/vislog-1.5.0.gif)
+
+
+## How to use new `AppSide` & `AppSettings` logging (bare minimum code sample)
+> [!TIP] 
+> you can download working example shown above from the [example-app/3.0](https://github.com/silver-zepp/zeppos-visual-logger/tree/master/example-app/3.0) folder
+
+### Step 0
+```js
+// install VisLog and its requirement ZML
+npm i @zeppos/zml
+npm i @silver-zepp/vis-log
+```
+> [!TIP] 
+> you only need ZML if you're planning to use `AppSide` / `AppSettings` logging
+
+### Step 1
+```js
+// AppSide (ie app-side/index.js)
+import { BaseSideService } from "@zeppos/zml/base-side";
+import { VisLogAppSide } from "@silver-zepp/vis-log/appside";
+
+const vis = new VisLogAppSide();
+
+AppSideService(
+  BaseSideService({
+    onInit() {
+      vis.attachSideRelay(this);
+      vis.log("Hello from AppSide!");
+    },
+);
+```
+
+### Step 2
+```js
+// AppSettings (ie setting/index.js)
+import { VisLogAppSettings } from "@silver-zepp/vis-log/appsettings";
+
+const vis = new VisLogAppSettings();
+
+AppSettingsPage({
+  build(props) {
+    if (!vis.initialized()) {
+      vis.attachSettingsRelay(props.settingsStorage);
+      vis.log("Settings page open!");
+    }
+    // draw settings UI
+    // ...
+  }
+});
+```
+
+### Step 3
+```js
+// Device (ie page.js)
+import { BasePage } from "@zeppos/zml/base-page";
+import VisLog from "@silver-zepp/vis-log";
+const vis = new VisLog();
+
+Page(
+  BasePage({
+    onInit() {
+      // init vislog side relay
+      vis.initSideRelay(this, (error, result) => {
+        if (error) vis.error("Failed to initialize Relay:", error.message);
+        else vis.log(`Side Relay Init OK (${result.elapsed_ms}ms)`);
+      });
+    },
+    
+    // handle logs from both AppSettings and AppSide service
+    onCall(data) {
+      if (vis.handleSideServiceCall(data)) return;
+    },
+  })
+);
+```
+
+### Done, you're now ready to receive logs from everywhere!
+
+
+
+## Basic use of Visual Logger
+
 ![](./assets/preview.jpg)
 
 ## Examples

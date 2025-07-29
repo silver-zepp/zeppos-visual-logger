@@ -1,6 +1,5 @@
 export const DEVICE_WIDTH: any;
 export const DEVICE_HEIGHT: any;
-export const screenShape: any;
 export default class VisLog {
     /**
      * Create a new VisLog instance.
@@ -78,6 +77,26 @@ export default class VisLog {
         reverse_order?: boolean;
         use_logger?: boolean;
     }): void;
+    /**
+     * Destroy the VisLog instance, clean up resources, and remove widgets.
+     */
+    destroy(): void;
+    /**
+     * Initialize the app-side service relay from device page
+     * Call this from your device page's onInit() method
+     * @param {Object} vm - The page instance (this)
+     * @param {Function} callback - Optional callback(error, result)
+     * @param {Object} options - Optional configuration (`default`: timeout = 5000, retries = 2)
+     */
+    initSideRelay(vm: any, callback: Function, options?: any): void;
+    /**
+     * Handle AppSide and AppSettings debug logs from onCall
+     * Call this from your device's onCall method in Page({})
+     * @param {Object} data - The data received from side service
+     * @returns {boolean} - True if handled, false if not a debug log
+     */
+    handleSideServiceCall(data: any): boolean;
     #private;
 }
-export { hmUI, px };
+import { getDeviceInfoPlus } from "./helpers/get_device_info_plus";
+export { hmUI, px, getDeviceInfoPlus };

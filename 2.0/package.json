@@ -1,12 +1,38 @@
 {
   "name": "@silver-zepp/vis-log",
-  "version": "1.2.3",
+  "version": "1.5.0",
   "description": "An on-screen logger for ZeppOS Mini apps.",
   "main": "dist/vis-log.js",
   "types": "ts/vis-log.d.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "exports": {
+    ".": {
+      "import": "./dist/vis-log.js",
+      "types": "./ts/vis-log.d.ts"
+    },
+    "./appside": {
+      "import": "./dist/vis-side/vis-log-appside.js",
+      "types": "./ts/vis-log-appside.d.ts"
+    },
+    "./appsettings": {
+      "import": "./dist/vis-side/vis-log-appsettings.js",
+      "types": "./ts/vis-log-appsettings.d.ts"
+    }
   },
+  "files": [
+    "dist/*.js",
+    "dist/helpers/*.js",
+    "dist/vis-side/*.js",
+    "ts/*.d.ts",
+    "!dist/*.src.js",
+    "!dist/helpers/*.src.js",
+    "!dist/vis-side/*.src.js"
+  ],
+  "keywords": [
+    "zeppos",
+    "zepp",
+    "zos",
+    "amazfit"
+  ],
   "zeppos": true,
   "author": "Silver, Zepp Health",
   "license": "MIT"
